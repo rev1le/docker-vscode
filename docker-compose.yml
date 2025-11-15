@@ -1,0 +1,33 @@
+services:
+  vscode:
+    build: ./vscode
+    container_name: vscode-server
+    volumes:
+      - ./data:/home/vscode/data
+      - ${PROJECTS_DIR}:/home/vscode/projects
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vscode.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.vscode.entrypoints=web"
+      - "traefik.http.routers.vscode.middlewares=auth@docker"
+      - "traefik.http.middlewares.auth.basicauth.usersfile=/usersfile"
+
+  traefik:
+    container_name: vscode-traefik
+    image: traefik:v2.10
+    command:
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:8080"
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/usersfile:/usersfile:ro
+    networks:
+      - web
+
+networks:
+  web:
+    driver: bridge
